@@ -1,0 +1,64 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Auto Claim Dashboard</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-slate-100 text-slate-800 font-sans p-6 md:p-12">
+
+    <div class="max-w-4xl mx-auto">
+        <div class="bg-white rounded-xl shadow-sm p-6 mb-8 border border-slate-200">
+            <h1 class="text-3xl font-bold text-slate-900 mb-2">Ninja Auto Claim Tracker</h1>
+            <p class="text-slate-500">Monitoring otomatis untuk proses claim harian Kage Hero Studio.</p>
+        </div>
+
+        <div class="bg-white rounded-xl shadow-sm overflow-hidden border border-slate-200">
+            <table class="w-full text-left border-collapse">
+                <thead>
+                    <tr class="bg-slate-50 border-b border-slate-200">
+                        <th class="p-4 font-semibold text-slate-700">Waktu (WIB)</th>
+                        <th class="p-4 font-semibold text-slate-700">Hari</th>
+                        <th class="p-4 font-semibold text-slate-700">Login Status</th>
+                        <th class="p-4 font-semibold text-slate-700">Claim Status</th>
+                    </tr>
+                </thead>
+                <tbody id="logTable" class="divide-y divide-slate-100">
+                    <!-- Data JSON akan dimuat di sini oleh JavaScript -->
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <script>
+        fetch('history.json')
+            .then(response => response.json())
+            .then(data => {
+                const tbody = document.getElementById('logTable');
+                if (data.length === 0) {
+                    tbody.innerHTML = '<tr><td colspan="4" class="p-4 text-center text-slate-500">Belum ada data claim.</td></tr>';
+                    return;
+                }
+                
+                data.forEach(log => {
+                    // Warna badge dinamis
+                    let claimBadge = log.claimStatus.includes('success') || log.claimStatus === '1' 
+                        ? 'bg-green-100 text-green-700' 
+                        : 'bg-yellow-100 text-yellow-700';
+
+                    const row = `
+                        <tr class="hover:bg-slate-50 transition-colors">
+                            <td class="p-4 text-sm">${log.date}</td>
+                            <td class="p-4 font-medium">${log.day}</td>
+                            <td class="p-4 text-sm">${log.loginStatus}</td>
+                            <td class="p-4"><span class="px-2 py-1 rounded-md text-xs font-medium ${claimBadge}">${log.claimStatus}</span></td>
+                        </tr>
+                    `;
+                    tbody.insertAdjacentHTML('beforeend', row);
+                });
+            })
+            .catch(error => console.error('Error fetching data:', error));
+    </script>
+</body>
+</html>
