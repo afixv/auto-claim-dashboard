@@ -20,10 +20,10 @@ jobs:
       with:
         node-version: '20'
 
-    - name: Install Playwright
+    - name: Install Playwright & Stealth Plugin
       run: |
         npm init -y
-        npm install playwright
+        npm install playwright playwright-extra puppeteer-extra-plugin-stealth
         npx playwright install chromium --with-deps
 
     - name: Run Script
