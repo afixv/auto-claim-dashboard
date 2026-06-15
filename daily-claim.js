@@ -1,6 +1,10 @@
-const { chromium } = require('playwright');
+const { chromium } = require('playwright-extra');
+const stealth = require('puppeteer-extra-plugin-stealth')();
 const fs = require('fs');
 const path = './history.json';
+
+// Terapkan Stealth Plugin untuk membypass Cloudflare
+chromium.use(stealth);
 
 async function runDailyClaim() {
   const today = new Date().getDate();
@@ -19,15 +23,22 @@ async function runDailyClaim() {
 
   const browser = await chromium.launch({ headless: true });
   const context = await browser.newContext({
-    userAgent: 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.0.0 Safari/537.36 Edg/145.0.0.0'
+    userAgent: 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.0.0 Safari/537.36 Edg/145.0.0.0',
+    viewport: { width: 1920, height: 1080 }
   });
   
   const page = await context.newPage();
 
   try {
     console.log('[*] Membuka web untuk bypass Cloudflare...');
-    await page.goto('https://kageherostudio.com/event/?event=daily', { waitUntil: 'networkidle' });
-    await page.waitForTimeout(3000);
+    await page.goto('https://kageherostudio.com/event/?event=daily', { waitUntil: 'domcontentloaded' });
+    
+    // Tunggu dengan cerdas sampai judul halaman bukan "Just a moment..." (Bypass Cloudflare)
+    console.log('[*] Menunggu Cloudflare Challenge selesai...');
+    await page.waitForFunction(() => document.title !== 'Just a moment...', { timeout: 15000 }).catch(() => console.log('[!] Timeout menunggu Cloudflare, lanjut eksekusi...'));
+    
+    // Beri tambahan waktu ekstra agar token cf_clearance tersimpan sempurna di cookie browser
+    await page.waitForTimeout(5000);
 
     console.log('[*] Mengeksekusi Login API...');
     const loginResponse = await page.evaluate(async (creds) => {
@@ -49,6 +60,7 @@ async function runDailyClaim() {
     logEntry.loginStatus = loginResponse.trim();
     console.log(`[+] Status Login: ${logEntry.loginStatus}`);
 
+    // Cek apakah response mengandung indikator sukses (biasanya kata "success" atau "1")
     if (loginResponse.includes('success') || loginResponse.trim() === '1') {
         console.log('[*] Mengeksekusi Claim API...');
         const claimResponse = await page.evaluate(async (data) => {
@@ -71,7 +83,7 @@ async function runDailyClaim() {
         logEntry.claimStatus = claimResponse.trim();
         console.log(`[+] Status Claim: ${logEntry.claimStatus}`);
     } else {
-        logEntry.claimStatus = 'Batal (Login Gagal)';
+        logEntry.claimStatus = 'Batal (Login Gagal/Terblokir)';
         console.log('[-] Claim dibatalkan karena login gagal.');
     }
 
@@ -84,7 +96,6 @@ async function runDailyClaim() {
   }
 }
 
-// Fungsi untuk menyimpan riwayat ke JSON
 function saveLog(newEntry) {
   let history = [];
   if (fs.existsSync(path)) {
@@ -92,8 +103,7 @@ function saveLog(newEntry) {
     history = JSON.parse(rawData);
   }
   
-  history.unshift(newEntry); // Masukkan data baru di urutan teratas
-  // Simpan maksimal 30 riwayat terakhir agar file tidak bengkak
+  history.unshift(newEntry);
   if (history.length > 30) history = history.slice(0, 30); 
   
   fs.writeFileSync(path, JSON.stringify(history, null, 2));
