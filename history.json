@@ -1,5 +1,12 @@
 [
   {
+    "date": "19/6/2026, 03.36.35",
+    "day": "Day-18",
+    "itemId": 1252,
+    "loginStatus": "{\"message\":\"success\",\"data\":\"Login is successful\"}",
+    "claimStatus": "{\"message\":\"failed\",\"data\":\"<strong>Warning!<\\/strong><br><ul><li>Reward: Reward is invalid for your current daily<\\/li><\\/ul>\",\"needLogin\":null}"
+  },
+  {
     "date": "18/6/2026, 03.34.22",
     "day": "Day-17",
     "itemId": 1251,
